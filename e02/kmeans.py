@@ -10,8 +10,8 @@ class KMeans:
         self.centroids = self.createCentroids()
     
     def get_centroids(self):
-        return self.centroids
-        
+        return np.array(self.centroids)
+    
     def createCentroids(self):
         centroids = [[] for _ in range(self.n_centroids)]
        
@@ -28,11 +28,12 @@ class KMeans:
             # sort data points to centroid with min euclidean distance
             sorted_dataPoints = [[] for _ in range(len(self.centroids))]
             
-            for point in dataPoints:
-                dists = KMeans.euclideanDistance(point, self.centroids)
-                centroid_id = np.argmin(dists)
-                sorted_dataPoints[centroid_id].append(point)
-            
+            for points in dataPoints:
+                for point in points:
+                    dists = KMeans.euclideanDistance(point, self.centroids)
+                    centroid_id = np.argmin(dists)
+                    sorted_dataPoints[centroid_id].append(point)
+                
             # Push current centroids to previous, reassign centroids as mean of the points belonging to them
             prev_centroids = self.centroids
             self.centroids = [np.mean(cluster, axis=0) for cluster in sorted_dataPoints]
@@ -41,9 +42,10 @@ class KMeans:
                     self.centroids[i] = prev_centroids[i]
                 
                 
-            KMeans.plotLists(sorted_dataPoints , self.centroids)
+            #KMeans.plotLists(self.sorted_dataPoints , self.centroids, dim =3)
             iteration += 1
-                
+        return sorted_dataPoints
+    
     @staticmethod
     def euclideanDistance(point, data): #TODO sorting to right center indices
         """
