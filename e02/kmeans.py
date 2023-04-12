@@ -14,11 +14,12 @@ class KMeans:
     
     def createCentroids(self):
         centroids = [[] for _ in range(self.n_centroids)]
-       
+    
         for i in range(self.n_centroids): 
             for _ in range(self.dim):
                 centroids[i].append(random.uniform(0, 255))
         return np.array(centroids)
+        
     
     def calc(self, dataPoints):
         iteration = 0
