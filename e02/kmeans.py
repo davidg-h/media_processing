@@ -3,52 +3,46 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class KMeans:
-    def __init__(self, dim, n_centroids = 2, max_iter = 10):
+    def __init__(self, n_centroids, max_iter):
         self.n_centroids = n_centroids
         self.max_iter = max_iter
-        self.dim = dim
-        self.centroids = self.createCentroids()
     
     def get_centroids(self):
-        return np.array(self.centroids)
+        return np.array(self.centroids, dtype=np.int32)
     
     def createCentroids(self):
-        centroids = [[] for _ in range(self.n_centroids)]
-    
-        for i in range(self.n_centroids): 
-            for _ in range(self.dim):
-                centroids[i].append(random.uniform(0, 255))
-        return np.array(centroids)
-        
+        return np.random.randint(0, 256, size=(self.n_centroids, 3), dtype=np.uint8)
     
     def calc(self, dataPoints):
+        self.centroids = self.createCentroids()
+        
         iteration = 0
         prev_centroids = None
         
         while np.not_equal(self.centroids, prev_centroids).any() and iteration < self.max_iter:
-            # sort data points to centroid with min euclidean distance
-            sorted_dataPoints = [[] for _ in range(len(self.centroids))]
             
-            for points in dataPoints:
-                for point in points:
-                    dists = KMeans.euclideanDistance(point, self.centroids)
-                    centroid_id = np.argmin(dists)
-                    sorted_dataPoints[centroid_id].append(point)
+            dists = np.sqrt(((dataPoints - self.centroids[:, np.newaxis])**2).sum(axis=2))
+            labels = np.argmin(dists, axis=0)
                 
-            # Push current centroids to previous, reassign centroids as mean of the points belonging to them
-            prev_centroids = self.centroids
-            self.centroids = [np.mean(cluster, axis=0) for cluster in sorted_dataPoints]
+            # labels == i creates a boolean mask that is True where labels is equal to i and False otherwise
+            # masked used in dataPoints to only select all data that belongs to cluster i
+            for j in range(self.n_centroids):
+                self.centroids[j] = dataPoints[labels == j].mean(axis=0)
+            
             for i, centroid in enumerate(self.centroids):
                 if np.isnan(centroid).any():  # Catch any np.nans, resulting from a centroid having no points
                     self.centroids[i] = prev_centroids[i]
                 
-                
+            
             #KMeans.plotLists(self.sorted_dataPoints , self.centroids, dim =3)
             iteration += 1
-        return sorted_dataPoints
+        # Map each pixel to its assigned centroid and return new RGB values
+        # using the labels array to index into the self.centroids array
+        mapped_DataValues = self.centroids[labels]
+        return mapped_DataValues
     
     @staticmethod
-    def euclideanDistance(point, data): #TODO sorting to right center indices
+    def euclideanDistance(point, data):
         """
         Euclidean distance between point & data.
         Point has dimensions (m,), data has dimensions (n,m), and output will be of size (n,).

@@ -1,6 +1,7 @@
 import random
 import numpy as np
 
+'''Class for generat random test data (testing of kmean alg)'''
 class DataList:
     def __init__(self, dim):
         self.dim = dim

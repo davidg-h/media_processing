@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from kmeans import KMeans
 from dataList import DataList
@@ -6,49 +7,41 @@ from PIL import Image
 
 np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
 
-
 def main():
     """ dim = int(input("How many dimensions: "))
     n_centroids = int(input("How many centroids: "))
     iterations = int(input("How many iterations: "))
     n_dataP = int(input("How many points: ")) """
 
-    colorCluster = ["4", "16", "256"]
+    img = Image.open("e02\\rose.jpg")
+    image_array = np.array(img)
+    # Extract the RGB values from the image array
+    rgb_values = image_array.reshape((-1, 3))
+    
+    # Define the number of clusters and the maximum number of iterations
+    num_clusters = 256
+    max_iterations = 100
 
-    img = np.array(Image.open("..\\e02\\rose.jpg"))
-    # rgb values after kmeans
-    img_kmeans = np.zeros(img.shape)
+    kMeans = KMeans(num_clusters, max_iterations)
 
-    kMeans = KMeans(3, 4, 2)
+    new_img_flat = kMeans.calc(rgb_values)
+        
+    # Reshape the flat array back to the original shape of the image
+    new_img_array = new_img_flat.reshape(image_array.shape)
+    
+    # Create a new image from the array
+    new_img = Image.fromarray(np.uint8(new_img_array))
+    
+    # Get the path to the directory where the script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    """ dataPoints = DataList(3)
-    # create data points for clustering
-    for elem in img:
-        dataPoints.add(elem)
-    dataPoints = dataPoints.npList() """
+    # Define the filename of the new image
+    new_img_filename = f'rose-256.jpg'
 
-    dataPoints_Of_Centroids = kMeans.calc(img)
-    centroids = kMeans.get_centroids().astype(int)
+    # Join the script directory path with the filename to get the full path of the new image
+    new_img_path = os.path.join(script_dir, new_img_filename)
 
-    # create a flattened version of dataPoints
-    flat_dataPoints = [pixel for sublist in dataPoints_Of_Centroids for pixel in sublist]
-
-    # convert flat_dataPoints to a numpy array
-    flat_dataPoints = np.array(flat_dataPoints)
-
-    # use in1d to get indices of img_array in flat_dataPoints
-    indices = np.where(np.in1d(flat_dataPoints, img))[0]
-
-    new_Image(indices, centroids, img_kmeans)
-
-    input("press any key to close the programm\n")
-
-
-def new_Image(indices, centroids, image):
-    temp = []
-    for i in range(len(indices)):
-        temp[i] = np.array[centroids[indices[i]]]
-    print(temp)
-
+    # Save the new image
+    new_img.save(new_img_path)
 
 main()
