@@ -3,111 +3,103 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class KMeans:
-    def __init__(self, n_centroids, max_iter):
-        self.n_centroids = n_centroids
+    def __init__(self, number_clusters = 6, max_iter = 100):
+        self.K = number_clusters
         self.max_iter = max_iter
+        # list of sample indices for each cluster
+        self.clusters = [[] for _ in range(self.K)]
+        # the centers (mean feature vector) for each cluster
+        self.centroids = []
     
     def get_centroids(self):
         return np.array(self.centroids, dtype=np.int32)
     
     def createCentroids(self):
-        return np.random.randint(0, 256, size=(self.n_centroids, 3), dtype=np.uint8)
+        # take random indices of the number of rows/rgb-vectors for self.K times
+        random_sample_idxs = np.random.choice(self.n_samples, self.K, replace=False)
+        # save the vectors as centroids
+        return [self.X[idx] for idx in random_sample_idxs]
+    
+    def calc_newCentroids(self, clusters):
+        # assign mean value of clusters to centroids
+        centroids = np.zeros((self.K, self.n_features))
+        for cluster_idx, cluster in enumerate(clusters):
+            cluster_mean = np.mean(self.X[cluster], axis=0)
+            centroids[cluster_idx] = cluster_mean
+        return centroids
+    
+    def get_cluster_labels(self, clusters):
+        # each sample will get the label of the cluster it was assigned to
+        labels = np.empty(self.n_samples, dtype = int)
+        for cluster_idx, cluster in enumerate(clusters):
+            for sample_index in cluster:
+                labels[sample_index] = cluster_idx
+        return labels
+    
+    def create_Clusters(self, centroids):
+        # Assign samples(=rgb value of pixel) to closest centroids (create clusters)
+        clusters = [[] for _ in range(self.K)]
+        for idx, sample in enumerate(self.X):
+            centroid_idx = self.closest_Centroid(sample, centroids)
+            clusters[centroid_idx].append(idx)
+        return clusters
+    
+    def closest_Centroid(self, sample, centroids):
+        # distance of the current sample to each centroid
+        distances = [KMeans.euclideanDistance(sample, point) for point in centroids]
+        closest_index = np.argmin(distances)
+        return closest_index
     
     def calc(self, dataPoints):
+        
+        self.X = dataPoints
+        # n_samples = rows; n_features = columns
+        self.n_samples, self.n_features = dataPoints.shape
+        print(f"Shape of data after extracting rgb values: {dataPoints.shape}")
+        print(f"{self.n_samples} pixels need to be processed")
+        # init centers for clusters
         self.centroids = self.createCentroids()
         
         iteration = 0
-        prev_centroids = None
+        centroid_old = None
         
-        while np.not_equal(self.centroids, prev_centroids).any() and iteration < self.max_iter:
+        while np.not_equal(self.centroids, centroid_old).any() and iteration < self.max_iter:
+            print("Iteration percentage: {:.0%}".format(iteration/self.max_iter))
+            self.clusters = self.create_Clusters(self.centroids)
             
-            dists = np.sqrt(((dataPoints - self.centroids[:, np.newaxis])**2).sum(axis=2))
-            labels = np.argmin(dists, axis=0)
-                
-            # labels == i creates a boolean mask that is True where labels is equal to i and False otherwise
-            # masked used in dataPoints to only select all data that belongs to cluster i
-            for j in range(self.n_centroids):
-                self.centroids[j] = dataPoints[labels == j].mean(axis=0)
+            # Calculate new centroids from the clusters
+            centroid_old = self.centroids
+            self.centroids = self.calc_newCentroids(self.clusters)
             
             for i, centroid in enumerate(self.centroids):
                 if np.isnan(centroid).any():  # Catch any np.nans, resulting from a centroid having no points
-                    self.centroids[i] = prev_centroids[i]
-                
+                    self.centroids[i] = centroid_old[i]
             
-            #KMeans.plotLists(self.sorted_dataPoints , self.centroids, dim =3)
             iteration += 1
-        # Map each pixel to its assigned centroid and return new RGB values
-        # using the labels array to index into the self.centroids array
-        mapped_DataValues = self.centroids[labels]
-        return mapped_DataValues
+        labels = self.get_cluster_labels(self.clusters)
+        print("Calculation done, image ready")
+        return self.data_Map(labels, self.n_features)
     
-    @staticmethod
-    def euclideanDistance(point, data):
-        """
-        Euclidean distance between point & data.
-        Point has dimensions (m,), data has dimensions (n,m), and output will be of size (n,).
-        """
-        return np.sqrt(np.sum((point - data)**2, axis=1))
+    def data_Map(self,mappedLabels, dim):
+        # shaping back to original rgb_values shape to regenerate the image
+        centroids = self.get_centroids()
+        map = np.zeros((len(mappedLabels), dim))
+        for i in range(len(mappedLabels)):
+            map[i] = centroids[mappedLabels[i]]
+        return map
     
-    @staticmethod
-    def plotLists(arr, centers, dim = 2):
-       # create a flat list of all points and their respective group index
-        flat_arr = []
-        for i, sublist in enumerate(arr):
-            if isinstance(sublist, list):
-                for point in sublist:
-                    if dim == 2:
-                        flat_arr.append([point[0], point[1], i])
-                    else:
-                        flat_arr.append([point[0], point[1], point[2], i])
-            else:
-                if dim == 2:
-                    flat_arr.append([sublist[0], sublist[1], -1])
-                else:
-                    flat_arr.append([sublist[0], sublist[1], sublist[2], -1])
-        flat_arr = np.array(flat_arr)
-
-        # split the flat array into subarrays based on the number of points in each sublist
-        splits = np.cumsum([len(sublist) if isinstance(sublist, list) else 1 for sublist in arr])
-        groups = np.split(flat_arr, splits[:-1])
-
-        # create a dictionary of unique group indices and their respective color
-        group_color = {}
-        num_groups = len(groups)
-        for i in range(num_groups):
-            group_color[i] = np.random.rand(3,)
-        group_color[num_groups] = np.random.rand(3,) # add color for cluster centers
-
-        # plot the points with different colors for groups and single points
-        fig = plt.figure(figsize=(8, 8))
-        if dim == 2:
-            ax = fig.add_subplot(111)
-        else:
-            ax = fig.add_subplot(111, projection='3d')
-        for group in groups:
-            if len(group) > 0:
-                group_index = group[0, -1]
-                color = group_color[group_index]
-                if group_index == -1:
-                    ax.scatter(group[0, 0], group[0, 1], c=color, alpha=0.8)
-                else:
-                    if dim == 2:
-                        ax.scatter(group[:, 0], group[:, 1], c=color, alpha=0.8)
-                    else:
-                        ax.scatter(group[:, 0], group[:, 1], group[:, 2], c=color, alpha=0.8)
-
-        # plot the cluster centers with a different color and marker
-        for i, center in enumerate(centers):
-            if dim == 2:
-                ax.scatter(center[0], center[1], c=group_color[i], marker='x', s=200)
-            else:
-                ax.scatter(center[0], center[1], center[2], c=group_color[i], marker='x', s=200)
-
-        # update the plot
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-
-        plt.show(block=False)
-        input("for next iteration press enter")
-        plt.close()          
+    def plotLists(self):
+        fig, ax = plt.subplots(figsize=(12, 8))
+        for i, index in enumerate(self.clusters):
+            point = self.X[index].T
+            ax.scatter(*point)
+        for point in self.centroids:
+            ax.scatter(*point, marker="x", color='black', linewidth=2)
+        plt.show()   
             
+    @staticmethod
+    def euclideanDistance(p1, p2):
+        """
+        Euclidean distance between two points
+        """
+        return np.sqrt(np.sum((p1 - p2)**2))
