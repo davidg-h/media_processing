@@ -1,18 +1,38 @@
 # import the opencv library
 import cv2  
+import numpy as np
 
-def on_trackbar(value):
-    print(value)
+def change_contrast(val):
+	global contrast
+	contrast = val
+	perform_operation(img)
+
+def change_brightness(val):
+	global brightness 
+	brightness = val/250
+	perform_operation(img)
+
+def perform_operation(img):
+	im1 = img*contrast + brightness
+	cv2.imshow("cap_frame", im1)
 
 def showCaps(filename):
+    global trackbar_created
+    global img
     img = cv2.imread(filename)
+    img = np.float32(img/255)
     cv2.imshow("cap_frame", img)
-    # add trackbar for contrast and lighting
-    initial_value = 50
-    max_value = 100
-    cv2.createTrackbar('contrast', 'cap_frame', initial_value, max_value, on_trackbar)
     
-  
+    if not trackbar_created:
+        # add trackbar for contrast and brightness
+        contrast = 1
+        brightness = 0
+        cv2.createTrackbar('contrast', 'cap_frame', contrast, 3, change_contrast)
+        cv2.createTrackbar('brightness', 'cap_frame', brightness, 200, change_brightness)
+        trackbar_created = True
+    
+trackbar_created = False
+
 # define a video capture object
 vid = cv2.VideoCapture(0)
 
