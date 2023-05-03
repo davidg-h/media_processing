@@ -1,1 +1,0 @@
-print(hex(ord("s")))
