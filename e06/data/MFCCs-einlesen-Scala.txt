@@ -1,0 +1,12 @@
+import System.in, java.lang.Float.intBitsToFloat
+
+val numberOfRecords: Int = read4Bytes()
+val floats = for {i <- 0 to numberOfRecords} yield
+intBitsToFloat(read4Bytes())
+val vectors = floats grouped 13 toSeq
+
+println(vectors(vectors.length / 2).map(n => f"$n%+2.2f").mkString(" "))
+
+def read4Bytes(): Int = ((in.read << 8 | in.read) << 8 | in.read) << 8 |
+in.read
+

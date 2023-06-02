@@ -1,0 +1,20 @@
+private static float[] getVector(string fileName)
+        {
+            byte[] bytes = File.ReadAllBytes(fileName);
+            int start = 4 + 52 * ((int)Math.Floor((double)(bytes.Length - 4) / 104));
+            float[] result = new float[13];
+            byte[] tmp;
+            for (int i = 0; i < 13; i++)
+            {
+                tmp = new byte[4];
+                tmp[3] = bytes[start];
+                tmp[2] = bytes[start + 1];
+                tmp[1] = bytes[start + 2];
+                tmp[0] = bytes[start + 3];
+
+                result[i] = BitConverter.ToSingle(tmp, 0);
+                start += 4;
+
+            }
+            return result;
+        }
