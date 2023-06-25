@@ -1,1 +1,1 @@
-MLP with keras tensorflow and MINST dataset
+# Multilayer-Perceptron (MLP) with keras from tensorflow and MINST dataset
